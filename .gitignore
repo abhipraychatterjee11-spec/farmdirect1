@@ -1,0 +1,9 @@
+node_modules
+.next
+.npm-cache
+work
+*.tsbuildinfo
+supabase/.temp/
+supabase/seed.sql
+.env*
+!.env.example
