@@ -29,7 +29,7 @@ export function SessionHeader() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#F7F5ED] text-[#1E4D36]">
             <Leaf size={17} />
           </span>
-          FarmDirect <span className="text-clay">AI</span>
+          FarmDirect
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
           {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 transition hover:text-white"><Home size={15} />Home</Link>}
