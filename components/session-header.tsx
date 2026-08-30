@@ -3,24 +3,37 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Home, Leaf } from "lucide-react";
+import { Home, LayoutDashboard, Leaf } from "lucide-react";
 import { LogoutButton } from "./auth-forms";
 import { createSupabaseBrowserClient } from "../lib/supabase/browser";
+import type { AppRole } from "../lib/auth";
 
 export function SessionHeader() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [role, setRole] = useState<AppRole | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => setAuthenticated(Boolean(data.user)));
+    async function updateSession(userId?: string) {
+      setAuthenticated(Boolean(userId));
+      if (!userId) {
+        setRole(null);
+        return;
+      }
+      const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+      setRole((data?.role as AppRole | undefined) ?? null);
+    }
+    supabase.auth.getUser().then(({ data }) => void updateSession(data.user?.id));
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthenticated(Boolean(session?.user));
+      void updateSession(session?.user?.id);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
   if (pathname === "/login" || pathname === "/register") return null;
+
+  const hasFarmerWorkspace = role === "farmer" || role === "fpo";
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#0a2d1d]/65 bg-[#1E4D36] text-[#F7F5ED]">
@@ -36,9 +49,11 @@ export function SessionHeader() {
           <Link href="/marketplace" className="transition hover:text-white">Marketplace</Link>
           <Link href="/about" className="transition hover:text-white">How it works</Link>
           <Link href="/bulk-buying" className="transition hover:text-white">Bulk buying</Link>
+          {hasFarmerWorkspace && <Link href="/farmer/dashboard" className="transition hover:text-white">Dashboard</Link>}
         </nav>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 transition hover:bg-white/10 md:hidden"><Home size={15} />Home</Link>}
+          {hasFarmerWorkspace && <Link href="/farmer/dashboard" className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs transition hover:bg-white/10 md:hidden"><LayoutDashboard size={15} />Dashboard</Link>}
           {authenticated ? (
             <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
           ) : (
