@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Plus, Truck } from "lucide-react";
+import { BarChart3, ClipboardList, Plus, Truck } from "lucide-react";
 
 const stats = [["₹48,620", "Estimated earnings"], ["9", "Incoming orders"], ["12", "Active listings"], ["+14%", "Demand trend"]];
 
@@ -13,6 +13,7 @@ export default function FarmerDashboard() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/farmer/products" className="inline-flex h-fit items-center gap-2 rounded-xl bg-leaf px-4 py-3 text-sm font-bold text-white"><Plus size={16} />Add product</Link>
+          <Link href="/farmer/orders" className="inline-flex h-fit items-center gap-2 rounded-xl bg-leaf px-4 py-3 text-sm font-bold text-white"><ClipboardList size={16} />Orders</Link>
           <Link href="/farmer/forecast" className="inline-flex h-fit items-center rounded-xl bg-leaf px-4 py-3 text-sm font-bold text-white">Demand Forecast</Link>
         </div>
       </div>
