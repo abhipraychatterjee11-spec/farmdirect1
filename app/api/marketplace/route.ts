@@ -1,3 +1,60 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
-export async function GET(){const s=await createSupabaseServerClient();const {data,error}=await s.from('products').select('id,name,category,description,price_inr,unit,status,seller_id,inventory(available_quantity)').eq('status','active').order('created_at',{ascending:false});if(error)return NextResponse.json({error:error.message},{status:400});const p=(data??[]).filter((x:any)=>(x.inventory?.[0]?.available_quantity??0)>0),ids=p.map((x:any)=>x.seller_id);const[f,fp]=await Promise.all([s.from('farmer_profiles').select('user_id,farm_name').in('user_id',ids),s.from('fpo_profiles').select('user_id,organization_name').in('user_id',ids)]);const n=new Map<string,string>();f.data?.forEach(x=>n.set(x.user_id,x.farm_name));fp.data?.forEach(x=>n.set(x.user_id,x.organization_name));return NextResponse.json(p.map((x:any)=>({id:x.id,name:x.name,category:x.category,description:x.description,price_inr:x.price_inr,unit:x.unit,status:x.status,available_quantity:x.inventory?.[0]?.available_quantity??0,seller_name:n.get(x.seller_id)??'FarmDirect seller'})));}
+
+type Inventory = { available_quantity: number };
+type InventoryRelation = Inventory | Inventory[] | null;
+
+type MarketplaceProduct = {
+  id: string;
+  name: string;
+  category: string;
+  description: string | null;
+  price_inr: number;
+  unit: string;
+  status: string;
+  seller_id: string;
+  inventory: InventoryRelation;
+};
+
+function availableQuantity(inventory: InventoryRelation) {
+  const record = Array.isArray(inventory) ? inventory[0] : inventory;
+  return record?.available_quantity ?? 0;
+}
+
+export async function GET() {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("id,name,category,description,price_inr,unit,status,seller_id,inventory(available_quantity)")
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  const products = (data ?? []) as MarketplaceProduct[];
+  const availableProducts = products.filter(
+    (product) => availableQuantity(product.inventory) > 0,
+  );
+  const sellerIds = availableProducts.map((product) => product.seller_id);
+  const [farmers, fpos] = await Promise.all([
+    supabase.from("farmer_profiles").select("user_id,farm_name").in("user_id", sellerIds),
+    supabase.from("fpo_profiles").select("user_id,organization_name").in("user_id", sellerIds),
+  ]);
+  const sellerNames = new Map<string, string>();
+  farmers.data?.forEach((farmer) => sellerNames.set(farmer.user_id, farmer.farm_name));
+  fpos.data?.forEach((fpo) => sellerNames.set(fpo.user_id, fpo.organization_name));
+
+  return NextResponse.json(
+    availableProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      description: product.description,
+      price_inr: product.price_inr,
+      unit: product.unit,
+      status: product.status,
+      available_quantity: availableQuantity(product.inventory),
+      seller_name: sellerNames.get(product.seller_id) ?? "FarmDirect seller",
+    })),
+  );
+}
