@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { canAccessPath, dashboardForRole, type AppRole } from "./lib/auth";
 
-const consumerPaths = ["/cart", "/orders"];
+const consumerPaths = ["/cart", "/checkout", "/orders"];
 const isProtected = (pathname: string) => pathname.startsWith("/farmer") || pathname.startsWith("/bulk") || pathname.startsWith("/admin") || consumerPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
 export async function middleware(request: NextRequest) {

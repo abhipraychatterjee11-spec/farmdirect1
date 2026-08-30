@@ -1,3 +1,47 @@
 "use client";
-import{useEffect,useState}from'react';const key='farmdirect-cart';type I={id:string;quantity:number;name?:string;price_inr?:number;unit?:string;stock?:number};
-export default function Cart(){const[x,setX]=useState<I[]>([]),[msg,setMsg]=useState('');async function load(){let saved:I[]=JSON.parse(localStorage.getItem(key)||'[]'),next:I[]=[];for(const i of saved){let r=await fetch('/api/marketplace/'+i.id);if(r.ok){let p=await r.json(),q=Math.min(i.quantity,p.available_quantity);if(q<i.quantity)setMsg('Cart adjusted to current stock.');next.push({id:p.id,quantity:q,name:p.name,price_inr:p.price_inr,unit:p.unit,stock:p.available_quantity})}else setMsg('Unavailable products were removed from cart.')}setX(next);localStorage.setItem(key,JSON.stringify(next.map(({id,quantity})=>({id,quantity}))));}useEffect(()=>{load()},[]);function save(n:I[]){setX(n);localStorage.setItem(key,JSON.stringify(n.map(({id,quantity})=>({id,quantity}))));}function q(i:I,d:number){let n=x.map(a=>a.id===i.id?{...a,quantity:a.quantity+d}:a);let a=n.find(a=>a.id===i.id)!;if(a.quantity<1)return save(n.filter(a=>a.id!==i.id));if(a.quantity>(a.stock||0)){setMsg('Stock limit reached.');return}save(n)}let total=x.reduce((s,i)=>s+(i.price_inr||0)*i.quantity,0);return <main className="page-shell"><div className="mx-auto max-w-3xl p-6"><h1 className="text-3xl font-extrabold">Your cart</h1>{msg&&<p className="mt-4 text-red-600">{msg}</p>}{!x.length?<p className="mt-7 rounded-xl bg-white p-6">Your cart is empty.</p>:<><div className="mt-6 space-y-3">{x.map(i=><div key={i.id} className="flex justify-between rounded-xl bg-white p-4"><div><b>{i.name}</b><p>₹{i.price_inr}/{i.unit} · {i.stock} available</p></div><div><button onClick={()=>q(i,-1)}>-</button><span className="px-3">{i.quantity}</span><button onClick={()=>q(i,1)}>+</button><button onClick={()=>save(x.filter(a=>a.id!==i.id))} className="ml-4 text-red-600">Remove</button></div></div>)}</div><p className="mt-5 text-xl font-bold">Subtotal: ₹{total.toFixed(2)}</p><button onClick={()=>save([])} className="mt-4 rounded-lg border px-4 py-2">Clear cart</button></>}</div></main>}
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+const key = "farmdirect-cart";
+type Item = { id: string; quantity: number; name?: string; price_inr?: number; unit?: string; stock?: number };
+
+export default function Cart() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [message, setMessage] = useState("");
+
+  async function load() {
+    const saved: Item[] = JSON.parse(localStorage.getItem(key) || "[]");
+    const next: Item[] = [];
+    for (const item of saved) {
+      const response = await fetch(`/api/marketplace/${item.id}`);
+      if (response.ok) {
+        const product = await response.json();
+        const quantity = Math.min(item.quantity, product.available_quantity);
+        if (quantity < item.quantity) setMessage("Cart adjusted to current stock.");
+        next.push({ id: product.id, quantity, name: product.name, price_inr: product.price_inr, unit: product.unit, stock: product.available_quantity });
+      } else setMessage("Unavailable products were removed from cart.");
+    }
+    setItems(next);
+    localStorage.setItem(key, JSON.stringify(next.map(({ id, quantity }) => ({ id, quantity }))));
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function save(next: Item[]) {
+    setItems(next);
+    localStorage.setItem(key, JSON.stringify(next.map(({ id, quantity }) => ({ id, quantity }))));
+  }
+
+  function updateQuantity(item: Item, change: number) {
+    const next = items.map((entry) => entry.id === item.id ? { ...entry, quantity: entry.quantity + change } : entry);
+    const updated = next.find((entry) => entry.id === item.id)!;
+    if (updated.quantity < 1) return save(next.filter((entry) => entry.id !== item.id));
+    if (updated.quantity > (updated.stock || 0)) { setMessage("Stock limit reached."); return; }
+    save(next);
+  }
+
+  const total = items.reduce((sum, item) => sum + (item.price_inr || 0) * item.quantity, 0);
+
+  return <main className="page-shell"><div className="mx-auto max-w-3xl p-6"><h1 className="text-3xl font-extrabold">Your cart</h1>{message && <p className="mt-4 text-red-600">{message}</p>}{!items.length ? <p className="mt-7 rounded-xl bg-white p-6">Your cart is empty.</p> : <><div className="mt-6 space-y-3">{items.map((item) => <div key={item.id} className="flex justify-between rounded-xl bg-white p-4"><div><b>{item.name}</b><p>₹{item.price_inr}/{item.unit} · {item.stock} available</p></div><div><button onClick={() => updateQuantity(item, -1)}>-</button><span className="px-3">{item.quantity}</span><button onClick={() => updateQuantity(item, 1)}>+</button><button onClick={() => save(items.filter((entry) => entry.id !== item.id))} className="ml-4 text-red-600">Remove</button></div></div>)}</div><p className="mt-5 text-xl font-bold">Subtotal: ₹{total.toFixed(2)}</p><div className="mt-4 flex flex-wrap gap-3"><Link href="/checkout" className="primary-button">Proceed to checkout</Link><button onClick={() => save([])} className="soft-button">Clear cart</button></div></>}</div></main>;
+}
