@@ -18,8 +18,6 @@ export function SessionHeader() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (!authenticated) return null;
-
   return (
     <header className="sticky top-0 z-30 border-b border-[#0a2d1d]/65 bg-[#1E4D36] text-[#F7F5ED]">
       <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-5 py-2">
@@ -34,7 +32,14 @@ export function SessionHeader() {
           <Link href="/about" className="transition hover:text-white">How it works</Link>
           <Link href="/bulk/dashboard" className="transition hover:text-white">Bulk buying</Link>
         </nav>
-        <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
+        {authenticated ? (
+          <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
+        ) : (
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Link href="/login" className="rounded-lg px-3 py-2 transition hover:text-white">Log in</Link>
+            <Link href="/register" className="rounded-lg border border-white/35 bg-[#F7F5ED] px-3 py-2 text-[#1E4D36] transition hover:bg-[#fffaf0]">Join</Link>
+          </div>
+        )}
       </div>
     </header>
   );
