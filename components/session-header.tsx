@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Leaf } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Home, Leaf } from "lucide-react";
 import { LogoutButton } from "./auth-forms";
 import { createSupabaseBrowserClient } from "../lib/supabase/browser";
 
 export function SessionHeader() {
   const [authenticated, setAuthenticated] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -17,6 +19,8 @@ export function SessionHeader() {
     });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  if (pathname === "/login" || pathname === "/register") return null;
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#0a2d1d]/65 bg-[#1E4D36] text-[#F7F5ED]">
@@ -28,18 +32,22 @@ export function SessionHeader() {
           FarmDirect <span className="text-clay">AI</span>
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
+          {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 transition hover:text-white"><Home size={15} />Home</Link>}
           <Link href="/marketplace" className="transition hover:text-white">Marketplace</Link>
           <Link href="/about" className="transition hover:text-white">How it works</Link>
           <Link href="/bulk/dashboard" className="transition hover:text-white">Bulk buying</Link>
         </nav>
-        {authenticated ? (
-          <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
-        ) : (
-          <div className="flex items-center gap-2 text-sm font-semibold">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 transition hover:bg-white/10 md:hidden"><Home size={15} />Home</Link>}
+          {authenticated ? (
+            <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
+          ) : (
+            <>
             <Link href="/login" className="rounded-lg px-3 py-2 transition hover:text-white">Log in</Link>
             <Link href="/register" className="rounded-lg border border-white/35 bg-[#F7F5ED] px-3 py-2 text-[#1E4D36] transition hover:bg-[#fffaf0]">Join</Link>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
