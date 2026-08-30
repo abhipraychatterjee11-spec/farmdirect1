@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { canAccessPath, dashboardForRole, type AppRole } from "./lib/auth";
 
 const consumerPaths = ["/cart", "/checkout", "/orders"];
-const isProtected = (pathname: string) => pathname.startsWith("/farmer") || pathname.startsWith("/bulk") || pathname.startsWith("/admin") || consumerPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+const isProtected = (pathname: string) => pathname.startsWith("/farmer") || pathname === "/bulk" || pathname.startsWith("/bulk/") || pathname.startsWith("/admin") || consumerPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

@@ -35,7 +35,7 @@ export function SessionHeader() {
           {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 transition hover:text-white"><Home size={15} />Home</Link>}
           <Link href="/marketplace" className="transition hover:text-white">Marketplace</Link>
           <Link href="/about" className="transition hover:text-white">How it works</Link>
-          <Link href="/bulk/dashboard" className="transition hover:text-white">Bulk buying</Link>
+          <Link href="/bulk-buying" className="transition hover:text-white">Bulk buying</Link>
         </nav>
         <div className="flex items-center gap-2 text-sm font-semibold">
           {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 transition hover:bg-white/10 md:hidden"><Home size={15} />Home</Link>}
