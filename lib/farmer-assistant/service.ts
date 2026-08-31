@@ -1,10 +1,11 @@
 import { buildForecasts, type ForecastRow } from "../forecasting/service";
 import { createSupabaseAdminClient } from "../supabase/admin";
 import { createSupabaseServerClient } from "../supabase/server";
+import { buildPriceForecasts } from "../price-forecasting/service";
 import type { AssistantAction, AssistantCard, AssistantReply } from "./types";
 
-type Product = { id: string; name: string; unit: string; created_at: string; status: string; inventory: { available_quantity: number; reorder_level: number } | { available_quantity: number; reorder_level: number }[] | null };
-type SaleItem = { order_id: string; product_id: string; product_name: string; quantity: number; unit: string; created_at: string; orders: { id: string; status: string; payment_status: string; created_at: string } | { id: string; status: string; payment_status: string; created_at: string }[] | null };
+type Product = { id: string; name: string; unit: string; created_at: string; status: string; price_inr: number; inventory: { available_quantity: number; reorder_level: number } | { available_quantity: number; reorder_level: number }[] | null };
+type SaleItem = { order_id: string; product_id: string; product_name: string; quantity: number; unit: string; unit_price_inr: number; created_at: string; orders: { id: string; status: string; payment_status: string; created_at: string } | { id: string; status: string; payment_status: string; created_at: string }[] | null };
 type Delivery = { id: string; order_id: string | null; pickup_address: string; dropoff_address: string; load_quantity: number; load_unit: string; status: string; requested_for: string | null };
 type RouteStop = { delivery_request_id: string | null; route_id: string; stop_order: number; stop_type: string; address: string };
 type Route = { id: string; vehicle_id: string; route_date: string; status: string };
@@ -27,8 +28,8 @@ type FarmerData = {
 async function loadFarmerData(userId: string): Promise<FarmerData> {
   const supabase = await createSupabaseServerClient();
   const [productsResult, itemsResult] = await Promise.all([
-    supabase.from("products").select("id,name,unit,created_at,status,inventory(available_quantity,reorder_level)").eq("seller_id", userId).order("name"),
-    supabase.from("order_items").select("order_id,product_id,product_name,quantity,unit,created_at,orders(id,status,payment_status,created_at)").eq("seller_id", userId).order("created_at", { ascending: false }),
+    supabase.from("products").select("id,name,unit,created_at,status,price_inr,inventory(available_quantity,reorder_level)").eq("seller_id", userId).order("name"),
+    supabase.from("order_items").select("order_id,product_id,product_name,quantity,unit,unit_price_inr,created_at,orders(id,status,payment_status,created_at)").eq("seller_id", userId).order("created_at", { ascending: false }),
   ]);
   if (productsResult.error) throw new Error("Unable to load your products.");
   if (itemsResult.error) throw new Error("Unable to load your orders.");
@@ -110,10 +111,11 @@ function stockReply(data: FarmerData, query: string): AssistantReply {
 
 function forecastReply(data: FarmerData, query: string): AssistantReply {
   const rows = forecasts(data);
+  const priceRows = buildPriceForecasts(data.products, data.items, rows);
   const selected = productMatch(data, query);
   const visible = selected.length === 1 ? rows.filter((row) => row.productId === selected[0].id) : [...rows].sort((a, b) => (a.outlook === "shortage risk" ? -1 : 0) - (b.outlook === "shortage risk" ? -1 : 0)).slice(0, 3);
   if (!visible.length) return { message: "There is no product history to forecast yet.", followUps: ["products", "menu"] };
-  return { message: "Here is an estimate based on your recent orders. It can change as new orders arrive.", cards: visible.map((row) => ({ title: `🌾 ${row.name}`, tone: row.outlook === "shortage risk" ? "urgent" : "information", lines: [`📦 You have now: ${fmt(row.inventory)} ${row.unit}`, row.forecast.nextSevenDays === null ? "Not enough previous orders yet to estimate demand." : `📅 Expected need for next 7 days: about ${fmt(row.forecast.nextSevenDays)} ${row.unit}`, `📈 ${demandWords(row.forecast.trend)}`, row.outlook === "shortage risk" && row.forecast.nextSevenDays !== null ? `⚠️ Stock may be low. Consider adding about ${fmt(Math.max(0, row.forecast.nextSevenDays - row.inventory))} ${row.unit}.` : row.outlook === "surplus risk" ? "You may have extra stock." : "Your stock looks sufficient."], href: "/farmer/forecast", linkLabel: "View detailed forecast" })), followUps: ["update_stock", "forecast", "attention", "menu"] };
+  return { message: "Here is an estimate based on your recent orders. It can change as new orders arrive.", cards: visible.map((row) => { const price = priceRows.find((entry) => entry.productId === row.productId)?.price ?? { currentPrice: 0, low: null, high: null, midpoint: null, trend: null }; return { title: `🌾 ${row.name}`, tone: row.outlook === "shortage risk" ? "urgent" : "information", lines: [`📦 You have now: ${fmt(row.inventory)} ${row.unit}`, row.forecast.nextSevenDays === null ? "Not enough previous orders yet to estimate demand." : `📅 Expected need for next 7 days: about ${fmt(row.forecast.nextSevenDays)} ${row.unit}`, `📈 ${demandWords(row.forecast.trend)}`, row.outlook === "shortage risk" && row.forecast.nextSevenDays !== null ? `⚠️ Stock may be low. Consider adding about ${fmt(Math.max(0, row.forecast.nextSevenDays - row.inventory))} ${row.unit}.` : row.outlook === "surplus risk" ? "You may have extra stock." : "Your stock looks sufficient.", `💰 Current price: ₹${Math.round(price.currentPrice)} / ${row.unit}`, price.midpoint === null ? "Not enough previous sales yet to estimate next week’s price." : `💰 Expected next 7 days: ₹${Math.round(price.low ?? 0)} – ₹${Math.round(price.high ?? 0)} / ${row.unit}`, price.midpoint === null ? "" : `Price may ${price.trend === "increasing" ? "increase" : price.trend === "decreasing" ? "decrease" : "stay similar"}.`], href: "/farmer/forecast", linkLabel: "View detailed forecast" }; }), followUps: ["update_stock", "forecast", "attention", "menu"] };
 }
 
 function deliveryReply(data: FarmerData): AssistantReply {
