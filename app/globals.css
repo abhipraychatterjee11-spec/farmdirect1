@@ -96,6 +96,31 @@ main.page-shell:has(> section.grid-pattern) section[class~="bg-[#edf4e4]"]::befo
   main.page-shell:has(> section.grid-pattern)::after { background: linear-gradient(to bottom, rgb(250 248 242 / .9), rgb(250 248 242 / .84) 48%, rgb(250 248 242 / .72)); }
 }
 
+/* Mobile-only containment: desktop dimensions remain unchanged. */
+@media (max-width: 640px) {
+  html, body { width: 100%; max-width: 100%; overflow-x: clip; }
+  main, main > *, .page-shell, .app-container { min-width: 0; max-width: 100%; }
+  main .min-w-56 { min-width: 0; }
+  input, select, textarea { font-size: 16px; }
+
+  button[aria-label="Open FarmDirect Assistant"] { bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
+  section[aria-label="FarmDirect Assistant"] {
+    right: .75rem;
+    bottom: calc(.75rem + env(safe-area-inset-bottom));
+    left: .75rem;
+    width: auto;
+    max-width: none;
+    height: min(40rem, calc(100dvh - 1.5rem - env(safe-area-inset-bottom)));
+  }
+  section[aria-label="FarmDirect Assistant"] header > div:first-child,
+  section[aria-label="FarmDirect Assistant"] header > div:first-child > div,
+  section[aria-label="FarmDirect Assistant"] [aria-live] { min-width: 0; }
+  section[aria-label="FarmDirect Assistant"] [aria-live] { min-height: 0; }
+  section[aria-label="FarmDirect Assistant"] p,
+  section[aria-label="FarmDirect Assistant"] article { overflow-wrap: anywhere; }
+  section[aria-label="FarmDirect Assistant"] form { padding-bottom: calc(.75rem + env(safe-area-inset-bottom)); }
+}
+
 @media print {
   body { background: white; }
   body > header, .receipt-actions { display: none !important; }
