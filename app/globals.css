@@ -119,6 +119,25 @@ main.page-shell:has(> section.grid-pattern) section[class~="bg-[#edf4e4]"]::befo
   section[aria-label="FarmDirect Assistant"] p,
   section[aria-label="FarmDirect Assistant"] article { overflow-wrap: anywhere; }
   section[aria-label="FarmDirect Assistant"] form { padding-bottom: calc(.75rem + env(safe-area-inset-bottom)); }
+
+  .mobile-nav-strip {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    gap: .25rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 .75rem .5rem;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 1.5rem), transparent 100%);
+    mask-image: linear-gradient(to right, black 0, black calc(100% - 1.5rem), transparent 100%);
+  }
+  .mobile-nav-strip::-webkit-scrollbar { display: none; }
+  .mobile-nav-strip a { flex: 0 0 auto; min-height: 2.75rem; white-space: nowrap; border-radius: .5rem; padding: .7rem .75rem; font-size: .875rem; font-weight: 600; }
+  .mobile-nav-strip a:active { background: rgb(255 255 255 / .12); }
 }
 
 @media print {

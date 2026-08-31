@@ -56,9 +56,9 @@ export function SessionHeader() {
           {authenticated && <Link href="/account/phone" className="transition hover:text-white">Enable Mobile Login</Link>}
         </nav>
         <div className="flex items-center gap-2 text-sm font-semibold">
-          {pathname !== "/" && <Link href="/" className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 transition hover:bg-white/10 md:hidden"><Home size={15} />Home</Link>}
-          {dashboardHref && <Link href={dashboardHref} className="inline-flex items-center gap-1.5 rounded-lg px-2 py-2 text-xs transition hover:bg-white/10 md:hidden"><LayoutDashboard size={15} />Dashboard</Link>}
-          {authenticated && <Link href="/account/phone" className="inline-flex rounded-lg p-2 transition hover:bg-white/10 md:hidden" aria-label="Enable mobile login"><Smartphone size={16} /></Link>}
+          {pathname !== "/" && <Link href="/" className="hidden"><Home size={15} />Home</Link>}
+          {dashboardHref && <Link href={dashboardHref} className="hidden"><LayoutDashboard size={15} />Dashboard</Link>}
+          {authenticated && <Link href="/account/phone" className="hidden" aria-label="Enable mobile login"><Smartphone size={16} /></Link>}
           {authenticated ? (
             <LogoutButton className="border border-white/35 bg-[#F7F5ED] text-[#1E4D36] hover:bg-[#fffaf0]" />
           ) : (
@@ -69,6 +69,14 @@ export function SessionHeader() {
           )}
         </div>
       </div>
+      <nav className="mobile-nav-strip md:hidden" aria-label="Mobile navigation">
+        <Link href="/">Home</Link>
+        <Link href="/marketplace">Marketplace</Link>
+        <Link href="/about">How it works</Link>
+        <Link href="/bulk-buying">Bulk buying</Link>
+        {dashboardHref && <Link href={dashboardHref}>Dashboard</Link>}
+        {authenticated && <Link href="/account/phone">Enable Mobile Login</Link>}
+      </nav>
     </header>
     {hasFarmerWorkspace && <FarmerAssistant />}
     </>
