@@ -61,6 +61,10 @@ a { color: inherit; text-decoration: none; }
 
 @media (prefers-reduced-motion: reduce) { .hero-image-card > img, .hero-reveal, .hero-hint, .slogan-illustration, .slogan-column { transition: none; } }
 
+@keyframes cart-toast-in { from { opacity: 0; transform: translateY(-.4rem); } to { opacity: 1; transform: translateY(0); } }
+.cart-toast { animation: cart-toast-in .2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .cart-toast { animation: none; } }
+
 @media (max-width: 640px) { .app-container { width: min(100% - 2rem, 72rem); padding-block: 1.5rem; } .slogan-illustration { height: 14rem; } .pride-landscape { height: 100%; object-position: center 52%; } section[class~="bg-[#edf4e4]"]::before { background-position: center 52%; filter: blur(7px); } section[class~="bg-[#edf4e4]"] > div { padding-bottom: 14rem; } section[class~="bg-[#edf4e4]"] .pride-landscape { height: 100%; object-position: center 52%; } }
 @media (max-width: 1023px) { .slogan-column:nth-child(2)::after { display: none; } }
 @media (max-width: 639px) { .slogan-column { min-height: auto; padding: 1.5rem 0; } .slogan-column:not(:last-child)::after { top: auto; right: 0; bottom: 0; left: 0; width: auto; height: 1px; } }

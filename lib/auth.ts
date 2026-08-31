@@ -13,5 +13,6 @@ export function canAccessPath(role: AppRole, pathname: string) {
   if (pathname.startsWith("/farmer")) return role === "farmer" || role === "fpo";
   if (pathname.startsWith("/bulk")) return role === "bulk_buyer";
   if (pathname.startsWith("/admin")) return role === "admin";
+  if (pathname === "/cart" || pathname.startsWith("/cart/") || pathname === "/checkout" || pathname.startsWith("/checkout/") || pathname === "/orders" || pathname.startsWith("/orders/")) return role === "consumer";
   return true;
 }
