@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Home, LayoutDashboard, Leaf, Smartphone } from "lucide-react";
 import { LogoutButton } from "./auth-forms";
+import { FarmerAssistant } from "./farmer-assistant/farmer-assistant";
 import { createSupabaseBrowserClient } from "../lib/supabase/browser";
 import type { AppRole } from "../lib/auth";
 
@@ -37,6 +38,7 @@ export function SessionHeader() {
   const dashboardHref = hasFarmerWorkspace ? "/farmer/dashboard" : role === "admin" ? "/admin/dashboard" : null;
 
   return (
+    <>
     <header className="sticky top-0 z-30 border-b border-[#0a2d1d]/65 bg-[#1E4D36] text-[#F7F5ED]">
       <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-5 py-2">
         <Link href="/" className="flex shrink-0 items-center gap-2 text-base font-bold sm:text-lg">
@@ -68,5 +70,7 @@ export function SessionHeader() {
         </div>
       </div>
     </header>
+    {hasFarmerWorkspace && <FarmerAssistant />}
+    </>
   );
 }
