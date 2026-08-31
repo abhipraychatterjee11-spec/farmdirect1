@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "../../../../lib/supabase/admin";
 import type { RegistrationRole } from "../../../../lib/auth";
+import { normalizeIndianPhone } from "../../../../lib/phone";
 
 const registrationRoles: RegistrationRole[] = ["farmer", "fpo", "consumer", "bulk_buyer"];
 const isText = (value: unknown, min = 1, max = 160): value is string => typeof value === "string" && value.trim().length >= min && value.trim().length <= max;
@@ -18,6 +19,10 @@ export async function POST(request: Request) {
   if (!isText(city, 2, 100) || !isText(state, 2, 100) || !isCoordinate(latitude, -90, 90) || !isCoordinate(longitude, -180, 180)) {
     return NextResponse.json({ error: "Enter a valid city and state." }, { status: 400 });
   }
+  const normalizedPhone = phone === undefined || phone === null || phone === "" ? null : normalizeIndianPhone(phone);
+  if ((phone !== undefined && phone !== null && phone !== "") && !normalizedPhone) {
+    return NextResponse.json({ error: "Enter a valid Indian mobile number, for example +919876543210." }, { status: 400 });
+  }
   if (role === "farmer" && !isText(farmName, 2, 160)) return NextResponse.json({ error: "Farm name is required for farmers." }, { status: 400 });
   if (role === "fpo" && !isText(organizationName, 2, 180)) return NextResponse.json({ error: "Organisation name is required for FPOs." }, { status: 400 });
 
@@ -28,7 +33,7 @@ export async function POST(request: Request) {
   if (authError || !created.user) return NextResponse.json({ error: authError?.message ?? "Unable to create account." }, { status: 400 });
 
   const userId = created.user.id;
-  const profileResult = await admin.from("profiles").insert({ id: userId, role, full_name: fullName.trim(), phone: isText(phone, 3, 30) ? phone.trim() : null, city: city.trim(), state: state.trim() });
+  const profileResult = await admin.from("profiles").insert({ id: userId, role, full_name: fullName.trim(), phone: normalizedPhone, city: city.trim(), state: state.trim() });
   if (profileResult.error) {
     await admin.auth.admin.deleteUser(userId);
     return NextResponse.json({ error: "Account setup failed. Please try again." }, { status: 500 });

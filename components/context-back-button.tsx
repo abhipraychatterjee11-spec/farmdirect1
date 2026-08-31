@@ -7,6 +7,7 @@ function fallbackFor(pathname: string) {
   if (pathname.startsWith("/farmer/") && pathname !== "/farmer/dashboard") return "/farmer/dashboard";
   if (pathname.startsWith("/admin/") && pathname !== "/admin/dashboard") return "/admin/dashboard";
   if (pathname.startsWith("/bulk/")) return "/bulk/dashboard";
+  if (pathname.startsWith("/account/")) return "/";
   if (pathname === "/checkout") return "/cart";
   if (pathname === "/cart" || pathname === "/orders") return "/marketplace";
   if (pathname.startsWith("/orders/")) return "/orders";
