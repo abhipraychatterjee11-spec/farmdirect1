@@ -91,3 +91,10 @@ main.page-shell:has(> section.grid-pattern) section[class~="bg-[#edf4e4]"]::befo
 @media (max-width: 640px) {
   main.page-shell:has(> section.grid-pattern)::after { background: linear-gradient(to bottom, rgb(250 248 242 / .9), rgb(250 248 242 / .84) 48%, rgb(250 248 242 / .72)); }
 }
+
+@media print {
+  body { background: white; }
+  body > header, .receipt-actions { display: none !important; }
+  .page-shell { min-height: auto; background: white; }
+  .receipt-card { box-shadow: none; }
+}
