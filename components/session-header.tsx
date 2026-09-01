@@ -35,7 +35,7 @@ export function SessionHeader() {
   if (pathname === "/login" || pathname === "/register") return null;
 
   const hasFarmerWorkspace = role === "farmer" || role === "fpo";
-  const dashboardHref = hasFarmerWorkspace ? "/farmer/dashboard" : role === "admin" ? "/admin/dashboard" : null;
+  const dashboardHref = hasFarmerWorkspace ? "/farmer/dashboard" : role === "bulk_buyer" ? "/bulk/dashboard" : role === "admin" ? "/admin/dashboard" : null;
 
   return (
     <>

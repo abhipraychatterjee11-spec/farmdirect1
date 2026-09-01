@@ -14,7 +14,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const { id } = await params;
   const { data, error } = await supabase
     .from("products")
-    .select("id,name,category,description,price_inr,unit,status,seller_id,inventory(available_quantity)")
+    .select("id,name,category,description,price_inr,unit,status,seller_id,image_url,image_source,inventory(available_quantity)")
     .eq("id", id)
     .eq("status", "active")
     .maybeSingle();
@@ -38,6 +38,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     price_inr: data.price_inr,
     unit: data.unit,
     status: data.status,
+    image_url: data.image_url,
+    image_source: data.image_source,
     available_quantity: quantity,
     seller_name: farmer.data?.farm_name ?? fpo.data?.organization_name ?? "FarmDirect seller",
   });

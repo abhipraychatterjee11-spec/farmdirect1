@@ -1,64 +1,27 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { ProductImage } from "./product-image";
 
-type Product = { id: string; name: string; category: string; description: string | null; price_inr: number; unit: string; status: string; inventory: { available_quantity: number }[] };
-type FarmerProductsProps = { editProductId?: string };
+type Product = { id: string; name: string; category: string; description: string | null; price_inr: number; unit: string; status: string; image_url: string | null; image_source: string | null; inventory: { available_quantity: number }[] };
 const blank = { name: "", category: "Vegetables", description: "", price_inr: "", quantity: "", unit: "kg", status: "active" };
+const acceptedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+const maxImageBytes = 5 * 1024 * 1024;
 
-export default function FarmerProducts({ editProductId }: FarmerProductsProps) {
-  const [items, setItems] = useState<Product[]>([]);
-  const [form, setForm] = useState<any>(blank);
-  const [editing, setEditing] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-  const handledEditId = useRef<string | null>(null);
-
-  function edit(product: Product) {
-    setEditing(product.id);
-    setForm({ name: product.name, category: product.category, description: product.description || "", price_inr: String(product.price_inr), quantity: String(product.inventory[0]?.available_quantity ?? 0), unit: product.unit, status: product.status });
-  }
-
-  async function load() {
-    setLoading(true);
-    const response = await fetch("/api/farmer/products");
-    const data = await response.json();
-    if (response.ok) setItems(data);
-    else setMessage(data.error);
-    setLoading(false);
-  }
-
+export default function FarmerProducts({ editProductId }: { editProductId?: string }) {
+  const [items, setItems] = useState<Product[]>([]); const [form, setForm] = useState<any>(blank); const [editing, setEditing] = useState<string | null>(null); const [file, setFile] = useState<File | null>(null); const [preview, setPreview] = useState(""); const [showPhotoChoices, setShowPhotoChoices] = useState(false); const [confirmRemove, setConfirmRemove] = useState(false); const [pendingCreatedProductId, setPendingCreatedProductId] = useState<string | null>(null); const [photoBusy, setPhotoBusy] = useState(false); const [message, setMessage] = useState("");
+  const camera = useRef<HTMLInputElement>(null); const gallery = useRef<HTMLInputElement>(null); const editingProduct = items.find((item) => item.id === editing) ?? null;
+  const load = async () => { const response = await fetch("/api/farmer/products"); if (response.ok) setItems(await response.json()); };
   useEffect(() => { void load(); }, []);
-  useEffect(() => {
-    if (!editProductId || !items.length || handledEditId.current === editProductId) return;
-    handledEditId.current = editProductId;
-    const product = items.find((item) => item.id === editProductId);
-    if (product && product.status !== "archived") edit(product);
-  }, [items, editProductId]);
-
-  const change = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setForm({ ...form, [event.target.name]: event.target.value });
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    setMessage("");
-    const body = { ...form, price_inr: Number(form.price_inr), quantity: Number(form.quantity), ...(editing ? { id: editing } : {}) };
-    const response = await fetch("/api/farmer/products", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await response.json();
-    if (!response.ok) { setMessage(data.error); return; }
-    setMessage(editing ? "Product updated." : "Product added.");
-    setForm(blank);
-    setEditing(null);
-    void load();
-  }
-  async function archive(id: string) {
-    if (!confirm("Deactivate this product?")) return;
-    const response = await fetch("/api/farmer/products", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-    setMessage(response.ok ? "Product deactivated." : (await response.json()).error);
-    void load();
-  }
-
-  return <main className="min-h-screen bg-[#F8FAF6]"><div className="mx-auto max-w-6xl p-5 md:p-10">
-    <p className="text-sm font-bold text-leaf">FARMER / FPO PORTAL</p><h1 className="mt-2 text-3xl font-extrabold">Products & inventory</h1><p className="mt-2 text-slate-600">Only you can manage these listings.</p>
-    <section className="mt-7 rounded-2xl bg-white p-6 shadow-sm"><h2 className="font-bold">{editing ? "Edit product" : "Add a product"}</h2><form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">{[["name", "Product name"], ["category", "Category"], ["price_inr", "Price (INR)"], ["quantity", "Available quantity"]].map(([name, label]) => <label key={name} className="text-sm font-semibold">{label}<input name={name} value={form[name]} onChange={change} required type={name === "price_inr" || name === "quantity" ? "number" : "text"} min={name === "price_inr" ? "0.01" : name === "quantity" ? "0" : undefined} step="0.01" className="mt-1 w-full rounded-lg border p-2" /></label>)}<label className="text-sm font-semibold">Unit<select name="unit" value={form.unit} onChange={change} className="mt-1 w-full rounded-lg border p-2">{["kg", "quintal", "piece", "dozen", "crate"].map((unit) => <option key={unit}>{unit}</option>)}</select></label><label className="text-sm font-semibold">Availability<select name="status" value={form.status} onChange={change} className="mt-1 w-full rounded-lg border p-2">{["active", "draft", "paused"].map((status) => <option key={status}>{status}</option>)}</select></label><label className="text-sm font-semibold sm:col-span-2">Description<textarea name="description" value={form.description} onChange={change} className="mt-1 w-full rounded-lg border p-2" /></label><div className="flex gap-3 sm:col-span-2"><button className="rounded-xl bg-leaf px-5 py-3 text-sm font-bold text-white">{editing ? "Save changes" : "Add product"}</button>{editing && <button type="button" onClick={() => { setEditing(null); setForm(blank); }} className="rounded-xl border px-5 py-3 text-sm font-bold">Cancel</button>}</div></form>{message && <p className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-leaf">{message}</p>}</section>
-    <section className="mt-7"><h2 className="text-xl font-bold">Your listings</h2>{loading ? <p className="mt-4 text-slate-500">Loading products…</p> : items.length === 0 ? <p className="mt-4 rounded-xl bg-white p-5 text-slate-600">No products yet. Add your first listing above.</p> : <div className="mt-4 grid gap-4 md:grid-cols-2">{items.map((product) => <article key={product.id} className="rounded-2xl bg-white p-5 shadow-sm"><div className="flex justify-between gap-3"><div><h3 className="font-bold">{product.name}</h3><p className="text-sm text-slate-500">{product.category} · {product.unit}</p></div><span className="rounded-lg bg-green-50 px-2 py-1 text-sm font-bold text-leaf">₹{product.price_inr}</span></div><p className="mt-3 text-sm">Available: <b>{product.inventory[0]?.available_quantity ?? 0} {product.unit}</b> · <span className="capitalize">{product.status}</span></p><div className="mt-4 flex gap-3"><button onClick={() => edit(product)} className="text-sm font-bold text-leaf">Edit</button>{product.status !== "archived" && <button onClick={() => archive(product.id)} className="text-sm font-bold text-red-600">Deactivate</button>}</div></article>)}</div>}</section>
-  </div></main>;
+  useEffect(() => { const product = items.find((item) => item.id === editProductId); if (product) { setEditing(product.id); setForm({ ...product, quantity: String(product.inventory[0]?.available_quantity ?? 0), price_inr: String(product.price_inr) }); } }, [items, editProductId]);
+  const clearPreview = () => { setFile(null); setPreview(""); };
+  const pick = (selected?: File) => { if (!selected) return; if (!acceptedImageTypes.includes(selected.type) || !selected.size || selected.size > maxImageBytes) { setMessage("Use a JPG, PNG, or WebP image smaller than 5 MB."); return; } clearPreview(); setFile(selected); setPreview(URL.createObjectURL(selected)); setShowPhotoChoices(false); setMessage(""); };
+  const replacePhoto = async () => { if (!editingProduct || !file) return; setPhotoBusy(true); const data = new FormData(); data.append("productId", editingProduct.id); data.append("file", file); try { const response = await fetch("/api/farmer/products/photo", { method: "POST", body: data }); const result = await response.json(); if (!response.ok) throw new Error(); setItems((current) => current.map((item) => item.id === editingProduct.id ? { ...item, image_url: result.image_url, image_source: result.image_source } : item)); clearPreview(); setMessage("Product photo updated."); } catch { setMessage("Photo couldn't be updated. Please try again."); } finally { setPhotoBusy(false); } };
+  const removePhoto = async () => { if (!editingProduct) return; setPhotoBusy(true); try { const response = await fetch("/api/farmer/products/photo", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: editingProduct.id }) }); if (!response.ok) throw new Error(); setItems((current) => current.map((item) => item.id === editingProduct.id ? { ...item, image_url: null, image_source: null } : item)); clearPreview(); setConfirmRemove(false); setMessage("Product photo removed."); } catch { setMessage("Photo couldn't be removed. Please try again."); } finally { setPhotoBusy(false); } };
+  const uploadPhoto = async (productId: string, photo: File) => { const data = new FormData(); data.append("productId", productId); data.append("file", photo); return (await fetch("/api/farmer/products/photo", { method: "POST", body: data })).ok; };
+  const retryPhoto = async () => { if (!pendingCreatedProductId || !file) { setMessage("Choose a photo to retry."); return; } setPhotoBusy(true); try { if (!await uploadPhoto(pendingCreatedProductId, file)) throw new Error(); setPendingCreatedProductId(null); clearPreview(); setMessage("Product photo uploaded."); } catch { setMessage("Product was added, but the photo couldn't be uploaded."); } finally { setPhotoBusy(false); } };
+  const save = async (event: FormEvent) => { event.preventDefault(); if (!editing) setPendingCreatedProductId(null); const response = await fetch("/api/farmer/products", { method: editing ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, id: editing ?? undefined, price_inr: Number(form.price_inr), quantity: Number(form.quantity) }) }); const product = await response.json(); if (!response.ok) { setMessage(product.error); return; } if (file && !editing) { if (!await uploadPhoto(product.id, file)) { setPendingCreatedProductId(product.id); setForm(blank); setEditing(null); setMessage("Product was added, but the photo couldn't be uploaded."); void load(); return; } setMessage("Product and photo saved."); } else setMessage("Product saved."); setPendingCreatedProductId(null); setForm(blank); setEditing(null); clearPreview(); void load(); };
+  const photoInputs = <><input ref={camera} className="hidden" type="file" accept="image/*" capture="environment" onChange={(event) => pick(event.target.files?.[0])} /><input ref={gallery} className="hidden" type="file" accept="image/*" onChange={(event) => pick(event.target.files?.[0])} /></>;
+  const previewPanel = <div className="mt-3"><p className="text-sm font-semibold">Product photo preview</p><img src={preview} alt="Selected product photo preview" className="mt-2 aspect-[4/3] w-full max-w-sm rounded-xl object-cover" /><div className="mt-2 flex flex-wrap gap-2"><button type="button" className="soft-button" disabled={photoBusy} onClick={() => editing ? void replacePhoto() : setFile(file)}>Use this photo</button><button type="button" className="soft-button" disabled={photoBusy} onClick={() => gallery.current?.click()}>Choose another</button><button type="button" className="soft-button" disabled={photoBusy} onClick={clearPreview}>Cancel</button></div></div>;
+  return <main className="page-shell"><div className="app-container max-w-5xl"><h1 className="text-3xl font-extrabold">Products & inventory</h1><section className="surface mt-6 p-5"><h2 className="font-bold">{editing ? "Edit product" : "Add a product"}</h2><form onSubmit={save} className="mt-4 grid gap-3 sm:grid-cols-2">{[["name", "Product name"], ["category", "Category"], ["price_inr", "Price (INR)"], ["quantity", "Available quantity"]].map(([name, label]) => <label key={name}>{label}<input className="mt-1 w-full" name={name} value={form[name]} onChange={(event) => setForm({ ...form, [name]: event.target.value })} required /></label>)}<label>Unit<select className="mt-1 w-full" name="unit" value={form.unit} onChange={(event) => setForm({ ...form, unit: event.target.value })}>{["kg", "quintal", "piece", "dozen", "crate"].map((unit) => <option key={unit}>{unit}</option>)}</select></label><label>Status<select className="mt-1 w-full" name="status" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>{["active", "draft", "paused"].map((status) => <option key={status}>{status}</option>)}</select></label><label className="sm:col-span-2">Description<textarea className="mt-1 w-full" name="description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>{editing && editingProduct ? <div className="sm:col-span-2 rounded-xl border border-slate-200 p-4"><p className="font-semibold">Current photo</p><ProductImage name={editingProduct.name} category={editingProduct.category} imageUrl={editingProduct.image_url} imageSource={editingProduct.image_source} className="mt-2 aspect-[4/3] w-full max-w-sm rounded-xl" />{!showPhotoChoices && !preview && !confirmRemove && <div className="mt-3 flex flex-wrap gap-2"><button type="button" className="soft-button" onClick={() => setShowPhotoChoices(true)}>Change Photo</button><button type="button" className="soft-button" onClick={() => setConfirmRemove(true)}>Remove Photo</button></div>}{showPhotoChoices && <div className="mt-3 grid gap-2 sm:flex"><button type="button" className="soft-button" onClick={() => camera.current?.click()}>📷 Take Photo</button><button type="button" className="soft-button" onClick={() => gallery.current?.click()}>🖼 Choose from Gallery</button><button type="button" className="soft-button" onClick={() => setMessage("AI image generation will be available soon.")}>✨ Generate with AI</button><button type="button" className="soft-button" onClick={() => setShowPhotoChoices(false)}>Cancel</button></div>}{preview && previewPanel}{confirmRemove && <div className="mt-3 rounded-lg bg-slate-50 p-3"><p className="text-sm">Remove this product photo? The product will use its default image or placeholder instead.</p><div className="mt-2 flex flex-wrap gap-2"><button type="button" className="soft-button" disabled={photoBusy} onClick={() => void removePhoto()}>Remove Photo</button><button type="button" className="soft-button" disabled={photoBusy} onClick={() => setConfirmRemove(false)}>Cancel</button></div></div>}{photoInputs}</div> : <div className="sm:col-span-2"><p className="font-semibold">Add product photo</p>{photoInputs}<div className="mt-2 grid gap-2 sm:flex"><button type="button" className="soft-button" onClick={() => camera.current?.click()}>📷 Take Photo</button><button type="button" className="soft-button" onClick={() => gallery.current?.click()}>🖼 Choose from Gallery</button><button type="button" className="soft-button" onClick={() => setMessage("AI image generation will be available soon.")}>✨ Generate with AI</button><button type="button" className="soft-button" onClick={clearPreview}>Skip for now</button></div>{preview && previewPanel}</div>}{!editing && pendingCreatedProductId && <div className="sm:col-span-2 flex flex-wrap gap-2"><button type="button" className="soft-button" disabled={photoBusy} onClick={() => void retryPhoto()}>Retry Photo</button><button type="button" className="soft-button" disabled={photoBusy} onClick={() => { setPendingCreatedProductId(null); clearPreview(); setMessage("Product added."); }}>Continue Without Photo</button></div>}<button className="primary-button sm:col-span-2">{editing ? "Save changes" : "Add product"}</button></form>{message && <p className="mt-3 text-sm text-leaf">{message}</p>}</section></div></main>;
 }

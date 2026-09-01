@@ -13,6 +13,8 @@ type MarketplaceProduct = {
   unit: string;
   status: string;
   seller_id: string;
+  image_url: string | null;
+  image_source: string | null;
   inventory: InventoryRelation;
 };
 
@@ -25,7 +27,7 @@ export async function GET() {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("products")
-    .select("id,name,category,description,price_inr,unit,status,seller_id,inventory(available_quantity)")
+    .select("id,name,category,description,price_inr,unit,status,seller_id,image_url,image_source,inventory(available_quantity)")
     .eq("status", "active")
     .order("created_at", { ascending: false });
 
@@ -53,6 +55,8 @@ export async function GET() {
       price_inr: product.price_inr,
       unit: product.unit,
       status: product.status,
+      image_url: product.image_url,
+      image_source: product.image_source,
       available_quantity: availableQuantity(product.inventory),
       seller_name: sellerNames.get(product.seller_id) ?? "FarmDirect seller",
     })),
