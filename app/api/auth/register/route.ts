@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   if (!isText(email, 5, 254) || !/^\S+@\S+\.\S+$/.test(email) || !isText(password, 8, 128) || !isText(fullName, 2, 120) || !registrationRoles.includes(role as RegistrationRole)) {
     return NextResponse.json({ error: "Enter a valid name, email, password (8+ characters), and role." }, { status: 400 });
   }
-  if (!isText(city, 2, 100) || !isText(state, 2, 100) || !isCoordinate(latitude, -90, 90) || !isCoordinate(longitude, -180, 180)) {
+  if (!isText(city, 2, 100) || !isText(state, 2, 100) || (latitude != null && !isCoordinate(latitude, -90, 90)) || (longitude != null && !isCoordinate(longitude, -180, 180))) {
     return NextResponse.json({ error: "Enter a valid city and state." }, { status: 400 });
   }
   const normalizedPhone = phone === undefined || phone === null || phone === "" ? null : normalizeIndianPhone(phone);
